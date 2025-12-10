@@ -6,6 +6,10 @@ export const getItems = () => {
   return axios.get(API_URL)
 }
 
+export const searchItems = (name) => {
+  return axios.get(`${API_URL}/search`, { params: { name } })
+}
+
 export const createItem = (item) => {
   return axios.post(API_URL, item)
 }

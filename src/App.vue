@@ -1,20 +1,54 @@
 <script setup>
 import { ref, onMounted } from 'vue'
-import { getItems, createItem, deleteItem } from './services/itemService'
+import { getItems, createItem, deleteItem, searchItems } from './services/itemService'
+import Swal from 'sweetalert2'
 
 const items = ref([])
 const newName = ref('')
+const searchName = ref('')
 
 const loadItems = async () => {
   const res = await getItems()
   items.value = res.data
 }
 
+const searchItem = async () => {
+  if (!searchName.value) {
+    loadItems()
+    return
+  }
+
+  try {
+    const res = await searchItems(searchName.value)
+    items.value = res.data
+  } catch (err) {
+    const message = err?.response?.data?.error || 'เกิดข้อผิดพลาด'
+    Swal.fire({
+      icon: 'error',
+      title: 'ไม่พบสินค้า',
+      text: message,
+      confirmButtonColor: '#d33',
+    })
+    items.value = [] // เคลียร์ list ถ้าไม่พบ
+  }
+}
+
 const addItem = async () => {
   if (!newName.value) return
-  await createItem({ name: newName.value })
-  newName.value = ''
-  loadItems()
+
+  try {
+    await createItem({ name: newName.value })
+    newName.value = ''
+    loadItems()
+  } catch (err) {
+    const message = err?.response?.data?.error || 'เกิดข้อผิดพลาด'
+    Swal.fire({
+      icon: 'error',
+      title: 'เพิ่มรายการไม่สำเร็จ',
+      text: message,
+      confirmButtonColor: '#d33',
+    })
+  }
 }
 
 const removeItem = async (id) => {
@@ -31,11 +65,22 @@ onMounted(() => {
   <div class="app-container">
     <h1 class="title">📦 Simple Item App</h1>
 
+    <!-- Add Item -->
     <div class="input-section">
       <input v-model="newName" placeholder="เพิ่มสินค้าใหม่…" class="input-box" />
       <button @click="addItem" class="btn-add">เพิ่ม</button>
     </div>
 
+    <div class="input-section">
+      <input
+        v-model="searchName"
+        @input="searchItem"
+        placeholder="ค้นหาสินค้า…"
+        class="input-box"
+      />
+    </div>
+
+    <!-- Item List -->
     <ul class="item-list">
       <li v-for="i in items" :key="i.id" class="item-card">
         <span>{{ i.name }}</span>
